@@ -1,8 +1,8 @@
-# Simulateur Train
+# Rail Express
 
 Simulateur de conduite ferroviaire 3D : composez votre train, choisissez un itinéraire entre de vraies gares françaises et conduisez avec signalisation BAL/TVM, KVB, VACMA et procédures de mise en service.
 
-**▶ Démo en ligne : [https://yoannservices.github.io/simulateur-train/](https://yoannservices.github.io/simulateur-train/)**
+**▶ Démo en ligne : [https://yoannservices.github.io/rail-express/](https://yoannservices.github.io/rail-express/)**
 
 ## Fonctionnalités
 
@@ -20,7 +20,7 @@ Aucune installation : ouvrez `index.html` dans un navigateur, ou servez le dossi
 python -m http.server 8000
 ```
 
-puis allez sur http://localhost:8000 (dans le dossier `web/` de Mes Projets : http://localhost:8000/loisirs/simulateur-train/).
+puis allez sur http://localhost:8000 (dans le dossier `web/` de Mes Projets : http://localhost:8000/loisirs/rail-express/).
 
 ## Structure
 
@@ -41,4 +41,4 @@ HTML, CSS et JavaScript ; rendu 3D avec [Three.js](https://threejs.org/) r128 (c
 
 ---
 
-Fait partie de [Mes Projets](https://yoannservices.github.io/) · [Portfolio](https://yoannservices.github.io/Y.Portfolio/) · par [@yoannservices](https://github.com/yoannservices)
+Fait partie de [Mes Projets](https://yoannservices.github.io/) · [Portfolio](https://yoannservices.github.io/portfolio/) · par [@yoannservices](https://github.com/yoannservices)

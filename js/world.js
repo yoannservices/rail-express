@@ -440,13 +440,26 @@ TS.World = (function () {
       const lat = -(S.extL + 14);
       const grp = new T.Group();
       const len = S.big ? 110 : S.q >= 6 ? 60 : 30, dep = S.big ? 22 : 12, h = S.big ? 14 : 8;
-      const wall = new T.Mesh(W.boxGeo, mat(S.st.lat > 46.5 ? 0xd9cfbd : 0xe7d4b5)); wall.scale.set(dep, h, len); wall.position.y = h / 2 - 1; grp.add(wall);
-      const roof = new T.Mesh(W.prismGeo, mat(S.st.lat > 47 ? 0x4f5660 : 0xa4553a)); roof.scale.set(dep + 1, 3.5, len + 1); roof.position.y = h - 1; grp.add(roof);
-      for (let k = 0; k < Math.floor(len / 5); k++) { const w = new T.Mesh(W.boxGeo, mat(0x26323e, 'glass')); w.scale.set(0.1, h * 0.35, 2.2); w.position.set(dep / 2 + 0.01, h * 0.45, -len / 2 + 2.5 + k * 5); grp.add(w); }
-      const nb = new T.Mesh(new T.PlaneGeometry(Math.min(len * 0.6, 26), 2.6), new T.MeshBasicMaterial({ map: nameTex(S.name) }));
-      nb.position.set(dep / 2 + 0.05, h - 2.6, 0); nb.rotation.y = Math.PI / 2; grp.add(nb);
+      // kit commun assets/building-kit.js : façade de pierre à travées, entrée vitrée sous marquise, toit à deux pans, horloge sur tour
+      const north = S.st.lat > 47, K = W.kit;
+      const km = W.stationMats[north ? 1 : 0] || (W.stationMats[north ? 1 : 0] = K.materials({ style: 'stone', wall: S.st.lat > 46.5 ? '#d9cfbd' : '#e7d4b5', roof: north ? 'slate' : 'tile', glass: '#2c4052', door: '#3a4a3e' }));
+      const acc = K.acc(), srnd = TS.rng(Math.floor(S.s) + 17), bay = 5, mg = 1.1;
+      acc.at(0, -1, 0, Math.PI / 2);   // façade +z du kit vers les voies (+x du groupe), faîtage le long de la voie
+      K.building(acc, { w: len, d: dep, h: h + 1, gfh: 4.6, fh: 3.4, roof: 'gable', rise: Math.min(dep * 0.3, 3.5), door: '+z', doorType: 'block', doorW: 3.2, win: [1.6, 2.4], bay, margin: mg, quoins: true, rand: srnd });
+      if (S.big) {   // tour de l'horloge qui traverse le toit
+        acc.at(0, h - 1, 0, Math.PI / 2);
+        K.building(acc, { w: 6, d: 6, h: 9.5, fh: 9.5, roof: 'flat', parapet: 0.5, equip: false, door: false, faces: [], plinth: false, bands: false, rand: srnd });
+      }
+      const kg = acc.geometries(), bld = K.group(kg, km); grp.add(bld);
+      for (const k in kg) g.userData.dispose.push(kg[k]);
+      // enseigne au nom de la gare au-dessus de la marquise, centrée sur la porte (entre les fenêtres voisines)
+      const n = Math.max(1, Math.round((len - 2 * mg) / bay)), sp = (len - 2 * mg) / n;
+      let sd = -len / 2 + mg + sp * 0.5; for (let k = 1; k < n; k++) { const sk = -len / 2 + mg + sp * (k + 0.5); if (Math.abs(sk) < Math.abs(sd)) sd = sk; }
+      const fas = new T.Mesh(W.boxGeo, mat(0x2b3138)); fas.scale.set(0.12, 0.9, 7.6); fas.position.set(dep / 2 + 0.07, -1 + 3.45, -sd); grp.add(fas);
+      const nb = new T.Mesh(new T.PlaneGeometry(7.4, 0.74), new T.MeshBasicMaterial({ map: nameTex(S.name), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      nb.position.set(dep / 2 + 0.135, -1 + 3.45, -sd); nb.rotation.y = Math.PI / 2; grp.add(nb);
       g.userData.dispose.push(nb.geometry, nb.material);
-      if (S.big) { const clock = new T.Mesh(W.cylGeo, mat(0xf4f4f4)); clock.scale.set(1.6, 0.2, 1.6); clock.rotation.z = Math.PI / 2; clock.position.set(dep / 2 + 0.2, h + 2.2, 0); grp.add(clock); const tw = new T.Mesh(W.boxGeo, mat(0xd9cfbd)); tw.scale.set(6, 8, 6); tw.position.set(0, h + 1.5, 0); grp.add(tw); }
+      if (S.big) { const clock = new T.Mesh(W.cylGeo, mat(0xf4f4f4)); clock.scale.set(1.6, 0.2, 1.6); clock.rotation.z = Math.PI / 2; clock.position.set(3.12, h - 1 + 5.5, 0); grp.add(clock); }
       placeAt(grp, org, S.s, lat, 0);
       g.add(grp);
       // trains en stationnement sur les voies de droite
@@ -521,22 +534,39 @@ TS.World = (function () {
       g.userData.dispose.push(trunk, crowns[0], crowns[1]);
     }
     if (houses.length) {
-      const walls = new T.InstancedMesh(W.boxGeo, W.wallMat, houses.length);
-      const roofs = new T.InstancedMesh(W.prismGeo, W.roofHMat, houses.length);
-      const col = new T.Color();
-      houses.forEach(([q, lat, a, b, c], i) => {
-        const p = R.point(q, lat, 0, {});
-        const y = terrainY(q, lat);
-        const w = 7 + a * 6, l = 8 + b * 8, h = 5 + (c > 0.8 ? 6 : 0) + a * 2;
-        d.position.set(p.x - org.x, y - org.y + h / 2 - 0.3, p.z - org.z); d.rotation.set(0, p.h + (c > 0.5 ? Math.PI / 2 : 0) + (b - 0.5) * 0.3, 0); d.scale.set(w, h, l); d.updateMatrix();
-        walls.setMatrixAt(i, d.matrix);
-        col.setRGB(0.82 + a * 0.12, 0.78 + b * 0.1, 0.68 + c * 0.1); walls.setColorAt(i, col);
-        d.position.y += h / 2; d.scale.set(w + 0.6, 2.5 + b, l + 0.6); d.updateMatrix(); roofs.setMatrixAt(i, d.matrix);
-        if (c < 0.5) col.setRGB(0.55 + a * 0.1, 0.27, 0.18); else col.setRGB(0.28, 0.3, 0.34);
-        roofs.setColorAt(i, col);
+      // chaque maison = un des 6 modèles du kit (calculés une fois), recopié et teinté ; un maillage par matériau et par tronçon
+      const items = houses.map(([q, lat, a, b, c]) => {
+        const p = R.point(q, lat, 0, {}), y = terrainY(q, lat), ai = Math.floor(a * 3) + (c > 0.8 ? 3 : 0);
+        const m = new T.Matrix4().makeRotationY(p.h + (c > 0.5 ? Math.PI / 2 : 0) + (b - 0.5) * 0.3).setPosition(p.x - org.x, y - org.y - 0.3, p.z - org.z);
+        return { geo: W.houseArch[Math.min(ai, 5)][c < 0.5 ? 0 : 1], m, col: new T.Color(0.82 + a * 0.12, 0.78 + b * 0.1, 0.68 + c * 0.1) };
       });
-      walls.instanceColor.needsUpdate = true; roofs.instanceColor.needsUpdate = true;
-      g.add(walls, roofs); g.userData.dispose.push(walls, roofs);
+      const keys = new Set(); items.forEach(it => Object.keys(it.geo).forEach(k => keys.add(k)));
+      const v = new T.Vector3(), nm = new T.Matrix3();
+      for (const k of keys) {
+        let n = 0; items.forEach(it => { if (it.geo[k]) n += it.geo[k].attributes.position.count; });
+        const P = new Float32Array(n * 3), Nn = new Float32Array(n * 3), U = new Float32Array(n * 2), C = new Float32Array(n * 3);
+        let o = 0;
+        for (const it of items) {
+          const gk = it.geo[k]; if (!gk) continue;
+          const pa = gk.attributes.position.array, na = gk.attributes.normal.array, ua = gk.attributes.uv.array, ca = gk.attributes.color.array, cnt = gk.attributes.position.count;
+          nm.getNormalMatrix(it.m);
+          const tint = k === 'wall' ? it.col : null;
+          for (let i = 0; i < cnt; i++) {
+            v.fromArray(pa, i * 3).applyMatrix4(it.m); P[(o + i) * 3] = v.x; P[(o + i) * 3 + 1] = v.y; P[(o + i) * 3 + 2] = v.z;
+            v.fromArray(na, i * 3).applyMatrix3(nm).normalize(); Nn[(o + i) * 3] = v.x; Nn[(o + i) * 3 + 1] = v.y; Nn[(o + i) * 3 + 2] = v.z;
+            U[(o + i) * 2] = ua[i * 2]; U[(o + i) * 2 + 1] = ua[i * 2 + 1];
+            C[(o + i) * 3] = ca[i * 3] * (tint ? tint.r : 1); C[(o + i) * 3 + 1] = ca[i * 3 + 1] * (tint ? tint.g : 1); C[(o + i) * 3 + 2] = ca[i * 3 + 2] * (tint ? tint.b : 1);
+          }
+          o += cnt;
+        }
+        const geo = new T.BufferGeometry();
+        geo.setAttribute('position', new T.BufferAttribute(P, 3)); geo.setAttribute('normal', new T.BufferAttribute(Nn, 3));
+        geo.setAttribute('uv', new T.BufferAttribute(U, 2)); geo.setAttribute('color', new T.BufferAttribute(C, 3));
+        geo.computeBoundingSphere();
+        const mk = k === 'roof_b' ? W.houseMats.roofSlate : W.houseMats[k] || W.houseMats.trim;
+        const mesh = new T.Mesh(geo, mk); mesh.castShadow = BuildingKit.cast(k); mesh.receiveShadow = true;
+        g.add(mesh); g.userData.dispose.push(geo);
+      }
     }
   }
 
@@ -624,6 +654,18 @@ TS.World = (function () {
     W.wallMat = new T.MeshLambertMaterial({ color: 0xffffff });
     W.roofHMat = new T.MeshLambertMaterial({ color: 0xffffff });
     W.boxGeo = new T.BoxGeometry(1, 1, 1);
+    // bâtiments détaillés (kit commun) : matériaux des gares et 6 modèles de maisons (tuiles / ardoises)
+    W.kit = BuildingKit(T); W.stationMats = [];
+    W.houseMats = W.kit.materials({ style: 'stucco', roof: 'tile', glass: '#33475b' });
+    W.houseMats.roofSlate = W.kit.materials({ roof: 'slate' }).roof;
+    W.houseArch = [
+      { w: 10, d: 8, h: 5.4, fh: 2.7 }, { w: 12, d: 9, h: 5.8, fh: 2.9 }, { w: 8, d: 7, h: 2.9, fh: 2.9 },
+      { w: 9, d: 8, h: 8.4, fh: 2.8 }, { w: 13, d: 10, h: 8.7, fh: 2.9 }, { w: 11, d: 9, h: 8.4, fh: 2.8 },
+    ].map((o, i) => [0, 1].map(slate => {
+      const acc = W.kit.acc().keys(slate ? { roof: 'roof_b' } : null);
+      W.kit.building(acc, { ...o, roof: 'gable', rise: Math.min(o.d * 0.38, 3.2), shutters: ['#3f6b4a', '#6b8fa8', '#8a4b3a', '#d8c690', '#7a8a96', '#3f6b4a'][i], quoins: i % 2 === 0, win: [1.0, 1.2], rand: TS.rng(31 + i * 2 + slate) });
+      return acc.geometries();
+    }));
     W.cylGeo = new T.CylinderGeometry(0.5, 0.5, 1, 10);
     W.lampGeo = new T.CircleGeometry(0.11, 14);
     W.boardGeo = new T.PlaneGeometry(0.9, 0.9);

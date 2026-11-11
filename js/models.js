@@ -245,11 +245,14 @@ TS.Models = (function () {
     g.translate(0, 0, -L / 2);
     return new T.Mesh(g, m);
   }
-  const REAL_CARS = { corail: 'queensland_railways_1900s_bl_heritage_carriage.glb', citerne: 'train_liquid_tanker_wagon_queensland_railway_wse.glb' }, realCars = {};
+  const REAL_CARS = { corail: 'passenger-wagon.glb', citerne: 'tank-wagon-8axle.glb' }, realCars = {};
+  // Vrais modèles : fitGLB met leur longueur sur Z, comme les véhicules du jeu (yaw 0). Ils sont étirés à la longueur du véhicule : si l'étirement les rend plus hauts que le gabarit (H, m), la hauteur est ramenée à H.
+  const REAL_H = { corail: 4.05, citerne: 4.3, loco: 4.3 };
+  function capH(f, H) { const y = new T.Box3().setFromObject(f).getSize(new T.Vector3()).y; if (y > H) f.scale.y = H / y; return f; }
   function realCar(out, v) {
     const file = REAL_CARS[v.model]; if (!file) return;
     realCars[v.model] = realCars[v.model] || import(new URL('../../assets/glb.js', location.href).href).then(async m => ({ m, g: await m.loadGLB(new URL(`../../assets/models/${file}`, location.href).href) }));
-    realCars[v.model].then(({ m, g }) => { out.children.forEach(o => { if (o.isMesh) o.visible = false; }); out.add(m.fitGLB(g.clone(true), v.len, Math.PI / 2)); }).catch(e => console.warn('Modèle GLB non chargé', v.model, e));
+    realCars[v.model].then(({ m, g }) => { out.children.forEach(o => { if (o.isMesh) o.visible = false; }); out.add(capH(m.fitGLB(g.clone(true), v.len, 0), REAL_H[v.model])); }).catch(e => console.warn('Modèle GLB non chargé', v.model, e));
   }
   function car(v) {
     const L = v.len, m = v.model;
@@ -326,12 +329,12 @@ TS.Models = (function () {
     return merge(g);
   }
 
-  /* vraie locomotive diesel (Sketchfab « 060 DA Diesel Locomotive » par aocrisan, CC-BY) à la place des locomotives diesel procédurales
-     (supprimées) ; chargée une seule fois puis clonée. */
+  /* vraie locomotive diesel (Sketchfab « Train | Locomotive SD40-2 » par Nikcore, CC-BY) à la place des locomotives diesel procédurales
+     (maillages masqués, feux gardés : world.js remet la visibilité du groupe à chaque image) ; chargée une seule fois puis clonée. */
   let realP = null;
   function realLoco(o, L) {
-    realP = realP || import(new URL('../../assets/glb.js', location.href).href).then(m => m.loadGLB(new URL('../../assets/models/queensland_railways_1200_class_diesel_locomotive.glb', location.href).href).then(g => ({ m, g })));
-    realP.then(({ m, g }) => { const real = m.fitGLB(g.clone(true), L, Math.PI / 2); o.visible = false; o.add(real); }).catch(e => console.warn('Locomotive non chargée', e));
+    realP = realP || import(new URL('../../assets/glb.js', location.href).href).then(m => m.loadGLB(new URL('../../assets/models/loco-sd40.glb', location.href).href).then(g => ({ m, g })));
+    realP.then(({ m, g }) => { const keep = new Set([...(o.userData.lw || []), ...(o.userData.lr || [])]); o.traverse(c => { if (c.isMesh && !keep.has(c)) c.visible = false; }); o.add(capH(m.fitGLB(g.clone(true), L, 0), REAL_H.loco)); }).catch(e => console.warn('Locomotive non chargée', e));
   }
 
   const cache = {};

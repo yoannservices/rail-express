@@ -37,11 +37,24 @@ puis allez sur http://localhost:8000 (dans le dossier `web/` de Mes Projets : ht
 
 ## Technologies
 
-HTML, CSS et JavaScript ; rendu 3D avec [Three.js](https://threejs.org/) r128 (chargé depuis un CDN). Sans étape de build.
+HTML, CSS et JavaScript ; rendu 3D avec [Three.js](https://threejs.org/) r186 (chargé depuis un CDN par `assets/three-compat.js`). Sans étape de build.
 
 ---
 
 Fait partie de [Mes Projets](https://yoannservices.github.io/) · [Portfolio](https://yoannservices.github.io/portfolio/) · par [@yoannservices](https://github.com/yoannservices)
+
+## Fiche technique
+
+Résumé de ce que fait le code, tenu à jour à chaque modification : le lire suffit pour vérifier une information sans relire tout le jeu.
+
+- **Code** : `js/models.js` (matériel roulant), `js/track.js`, `js/main.js` (vues, boucle), `js/audio.js`.
+- **Vrais modèles** (tous de Nikcore, CC-BY) : `fitGLB(longueur du véhicule du jeu, 0)` (longueur sur Z comme les véhicules du jeu ; l'ancien `π/2` les mettait en travers de la voie), puis `capH` : si l'étirement à la longueur du jeu les rend trop hauts, hauteur ramenée au gabarit (`REAL_H` : Corail 4,05 m, citerne 4,3 m, loco 4,3 m).
+  - voitures Corail et couchettes : `passenger-wagon.glb` (20,5 m d'origine, étirée à 26,4 m) ;
+  - wagons-citernes : `tank-wagon-8axle.glb` ;
+  - locomotives diesel (BB 67400, BB 75000, CC 72000) : `loco-sd40.glb` (`realLoco`). Les maillages procéduraux de la loco sont masqués un par un, feux gardés (`userData.lw` / `lr`) : masquer le groupe ne marche pas, `world.js` remet sa visibilité à chaque image ;
+  - le reste est procédural.
+- **Vues (C ou bouton « Vue (C) »)** : `M.toggleView` bascule cabine / extérieure (glisser pour tourner, molette pour zoomer).
+- **Sauvegarde** : composition du train `train:setup`.
 
 ## Crédits des modèles 3D
 
